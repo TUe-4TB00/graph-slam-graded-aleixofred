@@ -9,6 +9,7 @@ ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.2, 0.2, 0.1]))
 MEASUREMENT_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.05, 0.1]))
 
 def add_pose(graph, initial_estimate, pose_5):
+    # Adding the initial estimate for the 5th pose using our helper function `add_pose_from_global` which also adds the odometry factor between X(4) and X(5).
     pose_4 = initial_estimate.atPose2(X(4))
     graph, initial_estimate = add_pose_from_global(
         graph=graph,
@@ -22,6 +23,7 @@ def add_pose(graph, initial_estimate, pose_5):
     return graph, initial_estimate
 
 def add_landmark_measurement(graph, result, pose_5, landmark):
+    # Adding the measurement from X(5) to the chosen landmark using our helper function `add_landmark_measurement_from_global` which calculates the correct bearing and range from the global poses.
     landmark_point = result.atPoint2(L(landmark))
     graph = add_landmark_measurement_from_global(
         graph=graph,
@@ -34,13 +36,17 @@ def add_landmark_measurement(graph, result, pose_5, landmark):
     return graph
 
 def optimize(graph, initial_estimate):
+    # TODO: Initialize the optimizer
     params = gtsam.LevenbergMarquardtParams()
     optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial_estimate, params)
+
+    # TODO: Perform the optimization and print the result
     result = optimizer.optimize()
     print(result)
     return result
 
 def minimize_marginals(graph, initial_estimate, pose_options):
+    #TODO: try different pose and landmark options here, and keep the one with the lowest sum of marginals.
     best_pose = None
     best_landmark = None
     best_sum = float('inf')
@@ -61,7 +67,7 @@ def minimize_marginals(graph, initial_estimate, pose_options):
             # Use trace to select the winner
             selection_metric = np.trace(marginals.marginalCovariance(L(1)))
 
-            # Use .sum() as the value to return
+            # The sum of the marginals for each landmark can be computed using marginals.marginalCovariance(L(x)).sum()
             return_sum = (
                 marginals.marginalCovariance(L(1)).sum() +
                 marginals.marginalCovariance(L(2)).sum()
@@ -87,6 +93,7 @@ def minimize_marginals(graph, initial_estimate, pose_options):
     return best_pose, best_landmark, best_return_sum
 
 def minimize_errors(graph, initial_estimate, pose_options):
+    #TODO: try different pose and landmark options here, and keep the one with the lowest resulting error.
     best_pose = None
     best_landmark = None
     best_sum = float('inf')
@@ -101,13 +108,9 @@ def minimize_errors(graph, initial_estimate, pose_options):
             g = add_landmark_measurement(g, result, pose_5, landmark)
             result = optimize(g, est)
 
-            list_of_errors = [
-                np.array([result.atPose2(X(1)).x(), result.atPose2(X(1)).y(), result.atPose2(X(1)).theta()]) - np.array([0, 0, 0]),
-                np.array([result.atPose2(X(2)).x(), result.atPose2(X(2)).y(), result.atPose2(X(2)).theta()]) - np.array([2, 0, 0]),
-                np.array([result.atPose2(X(3)).x(), result.atPose2(X(3)).y(), result.atPose2(X(3)).theta()]) - np.array([4, 0, 0]),
-            ]
-
-            sum_of_errors = sum(np.dot(e, e) for e in list_of_errors)
+            # TODO: create a list of errors (each index corresponds to a pose) and add the error of each pose to the list
+            # TODO: compute the sum of the errors and return it along with the best pose and landmark
+            sum_of_errors = graph.error(result)
 
             print(f"Pose {pose_key}, Landmark {landmark}: sum of errors = {sum_of_errors}")
 
