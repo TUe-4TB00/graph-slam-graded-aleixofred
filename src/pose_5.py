@@ -109,8 +109,14 @@ def minimize_errors(graph, initial_estimate, pose_options):
             result = optimize(g, est)
 
             # TODO: create a list of errors (each index corresponds to a pose) and add the error of each pose to the list
+            list_of_errors = []
+            for i, (x_gt, y_gt, theta_gt) in enumerate([(0.0, 0.0, 0.0), (2.0, 0.0, 0.0), (4.0, 0.0, 0.0)]):
+                pose = result.atPose2(X(i + 1))
+                error = abs(pose.x() - x_gt) + abs(pose.y() - y_gt) + abs(pose.theta() - theta_gt)
+                list_of_errors.append(error)
+
             # TODO: compute the sum of the errors and return it along with the best pose and landmark
-            sum_of_errors = graph.error(result)
+            sum_of_errors = sum(list_of_errors)
 
             print(f"Pose {pose_key}, Landmark {landmark}: sum of errors = {sum_of_errors}")
 
